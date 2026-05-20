@@ -1,0 +1,14 @@
+{
+  "name": "bot-bastoyt",
+  "version": "1.0.0",
+  "description": "Bot Discord pour BastoYT",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "xml2js": "^0.6.2"
+  }
+}
