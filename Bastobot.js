@@ -253,9 +253,6 @@ async function lancerGiveaway(channel, titre, prix, temps, organisateur) {
 // ─────────────────────────────────────────────
 const commands = [
   new SlashCommandBuilder()
-    .setName('ping')
-    .setDescription('Répond avec Pong 🏓'),
-  new SlashCommandBuilder()
     .setName('aide')
     .setDescription('Affiche la liste des commandes disponibles'),
   new SlashCommandBuilder()
@@ -264,15 +261,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName('video')
     .setDescription('Donne un lien vers la dernière vidéo de BastoYT'),
-  new SlashCommandBuilder()
-    .setName('report')
-    .setDescription('Reporte un utilisateur au staff')
-    .addUserOption(opt =>
-      opt.setName('utilisateur').setDescription('Utilisateur à signaler').setRequired(true)
-    )
-    .addStringOption(opt =>
-      opt.setName('raison').setDescription('Raison du report').setRequired(true)
-    ),
   new SlashCommandBuilder()
     .setName('live')
     .setDescription('Vérifie si BastoYT est actuellement en live sur YouTube'),
@@ -523,10 +511,10 @@ client.on('interactionCreate', async interaction => {
       embeds: [new EmbedBuilder()
         .setTitle('📋 Commandes disponibles').setColor(0x5865F2)
         .addFields(
-          { name: '🏓 /ping',                    value: 'Répond avec Pong',             inline: true },
+         
           { name: '📺 /chaine',                  value: 'Lien vers la chaîne YouTube',  inline: true },
           { name: '🎬 /video',                   value: 'Dernière vidéo de BastoYT',    inline: true },
-          { name: '🚨 /report [@user] [raison]', value: 'Signale un utilisateur',       inline: true },
+         
           { name: '🔴 /live',                    value: 'Vérifie si BastoYT est en live', inline: true },
           { name: '📊 /abocount',                value: 'Stats et abonnés de la chaîne', inline: true },
         )
