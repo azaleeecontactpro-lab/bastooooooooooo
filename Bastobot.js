@@ -26,7 +26,6 @@ if (!DISCORD_TOKEN || !CLIENT_ID) {
 // ─────────────────────────────────────────────
 //  IDs fixes
 // ─────────────────────────────────────────────
-const REPORT_CHANNEL_ID     = '1398187982422278231';
 const YOUTUBE_CHANNEL_URL   = 'https://www.youtube.com/@BastoYT';
 const ACTIVITY_ROLE_ID      = '1454245254587744349';
 const GIVEAWAY_ROLE_ID      = '1454245254587744349';
@@ -34,17 +33,12 @@ const GIVEAWAY_PING_ROLE_ID = '1333856606135255090';
 const MOD_ROLE_ID           = '1454245254587744349';
 const ANNONCE_ROLE_ID       = '1454245254587744349';
 
-// ── YouTube notifs ────────────────────────────
-const YOUTUBE_CHANNEL_ID   = process.env.YOUTUBE_CHANNEL_ID ?? 'UCldvL0jYz9QGZAaSCEAJUGA';
-const NOTIF_CHANNEL_ID     = '1398426864653172937';
-const NOTIF_PING_ROLE_ID   = '1398425212420227192';
-const YT_CHECK_INTERVAL_MS = 60_000;
+// ── YouTube ───────────────────────────────────
+const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID ?? 'UCldvL0jYz9QGZAaSCEAJUGA';
 
 // ─────────────────────────────────────────────
 //  YOUTUBE — Flux RSS (dernière vidéo)
 // ─────────────────────────────────────────────
-let lastVideoId = null;
-
 async function fetchLatestYouTubeVideo() {
   const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${YOUTUBE_CHANNEL_ID}`;
   return new Promise((resolve, reject) => {
@@ -121,49 +115,6 @@ async function fetchLiveStatus() {
       });
     }).on('error', reject);
   });
-}
-
-// ─────────────────────────────────────────────
-//  YOUTUBE — Polling notifications
-// ─────────────────────────────────────────────
-async function checkYouTube(client) {
-  try {
-    const video = await fetchLatestYouTubeVideo();
-    if (!video) return;
-    if (lastVideoId === null) { lastVideoId = video.id; return; }
-    if (video.id === lastVideoId) return;
-
-    lastVideoId = video.id;
-    console.log(`[YouTube] 🔴 Nouvelle vidéo : ${video.title}`);
-
-    const channel = await client.channels.fetch(NOTIF_CHANNEL_ID);
-    if (!channel?.isTextBased()) return;
-
-    const embed = new EmbedBuilder()
-      .setTitle(`🎬  ${video.title}`)
-      .setURL(video.url)
-      .setColor(0xFF0000)
-      .setDescription(
-        `✦·····························✦\n\n` +
-        `Une nouvelle vidéo vient d'être publiée sur la chaîne !\n\n` +
-        `🔗 **[Regarder maintenant](${video.url})**\n\n` +
-        `✦·····························✦`
-      )
-      .setImage(video.thumb)
-      .addFields(
-        { name: '📺 Chaîne', value: `[BastoYT](${YOUTUBE_CHANNEL_URL})`, inline: true },
-        { name: '🕐 Publiée', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true },
-      )
-      .setFooter({ text: 'BastoYT • YouTube' })
-      .setTimestamp();
-
-    await channel.send({
-      content: `<@&${NOTIF_PING_ROLE_ID}> 🔴 **Nouvelle vidéo en ligne !**`,
-      embeds: [embed],
-    });
-  } catch (err) {
-    console.error('[YouTube] Erreur :', err.message);
-  }
 }
 
 // ─────────────────────────────────────────────
@@ -297,13 +248,10 @@ const client = new Client({
 });
 
 // ─────────────────────────────────────────────
-//  READY  (corrigé : 'ready' et non 'clientReady')
+//  READY
 // ─────────────────────────────────────────────
 client.once('ready', () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
-  checkYouTube(client);
-  setInterval(() => checkYouTube(client), YT_CHECK_INTERVAL_MS);
-  console.log(`[YouTube] ✅ Polling actif (toutes les ${YT_CHECK_INTERVAL_MS / 1000}s)`);
 });
 
 // ─────────────────────────────────────────────
@@ -314,8 +262,6 @@ client.on('messageCreate', async message => {
   const content = message.content.trim();
 
   // ── .activity ────────────────────────────────
-  // CORRECTION : le bug venait de 'clientReady' → désormais 'ready'
-  // Le bot doit avoir le rôle ACTIVITY_ROLE_ID pour utiliser cette commande
   if (content.startsWith('.activity ')) {
     if (!message.member?.roles.cache.has(ACTIVITY_ROLE_ID)) return;
 
@@ -499,24 +445,16 @@ client.on('messageCreate', async message => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  // /ping
-  if (interaction.commandName === 'ping') {
-    await interaction.reply('Pong 🏓');
-    return;
-  }
-
   // /aide
   if (interaction.commandName === 'aide') {
     await interaction.reply({
       embeds: [new EmbedBuilder()
         .setTitle('📋 Commandes disponibles').setColor(0x5865F2)
         .addFields(
-         
-          { name: '📺 /chaine',                  value: 'Lien vers la chaîne YouTube',  inline: true },
-          { name: '🎬 /video',                   value: 'Dernière vidéo de BastoYT',    inline: true },
-         
-          { name: '🔴 /live',                    value: 'Vérifie si BastoYT est en live', inline: true },
-          { name: '📊 /abocount',                value: 'Stats et abonnés de la chaîne', inline: true },
+          { name: '📺 /chaine',   value: 'Lien vers la chaîne YouTube',    inline: true },
+          { name: '🎬 /video',    value: 'Dernière vidéo de BastoYT',      inline: true },
+          { name: '🔴 /live',     value: 'Vérifie si BastoYT est en live', inline: true },
+          { name: '📊 /abocount', value: 'Stats et abonnés de la chaîne', inline: true },
         )
         .setFooter({ text: 'Bot BastoYT' }).setTimestamp()],
     });
@@ -558,30 +496,7 @@ client.on('interactionCreate', async interaction => {
     return;
   }
 
-  // /report
-  if (interaction.commandName === 'report') {
-    const target = interaction.options.getUser('utilisateur');
-    const reason = interaction.options.getString('raison');
-    try {
-      const reportChannel = await client.channels.fetch(REPORT_CHANNEL_ID);
-      if (!reportChannel?.isTextBased()) throw new Error('Salon de report introuvable.');
-      await reportChannel.send({
-        embeds: [new EmbedBuilder()
-          .setTitle('🚨 Nouveau report').setColor(0xE74C3C)
-          .addFields(
-            { name: '🎯 Utilisateur signalé', value: `${target} (${target.id})`,                    inline: true },
-            { name: '👤 Signalé par',         value: `${interaction.user} (${interaction.user.id})`, inline: true },
-            { name: '📝 Raison',              value: reason,                                         inline: false },
-          ).setTimestamp()],
-      });
-      await interaction.reply({ content: '✅ Ton report a bien été envoyé au staff.', ephemeral: true });
-    } catch {
-      await interaction.reply({ content: '❌ Impossible d\'envoyer le report pour le moment.', ephemeral: true });
-    }
-    return;
-  }
-
-  // ── /live ─────────────────────────────────────
+  // /live
   if (interaction.commandName === 'live') {
     await interaction.deferReply();
     try {
@@ -629,18 +544,17 @@ client.on('interactionCreate', async interaction => {
     return;
   }
 
-  // ── /abocount ─────────────────────────────────
+  // /abocount
   if (interaction.commandName === 'abocount') {
     await interaction.deferReply();
     try {
       const stats = await fetchChannelStats();
 
-      // Barre de progression visuelle (sur 10 blocs) vers prochain palier
-      const prochainPalier = Math.pow(10, Math.ceil(Math.log10(stats.subscribers + 1)));
+      const prochainPalier  = Math.pow(10, Math.ceil(Math.log10(stats.subscribers + 1)));
       const palierPrecedent = Math.pow(10, Math.floor(Math.log10(stats.subscribers)));
-      const progression = (stats.subscribers - palierPrecedent) / (prochainPalier - palierPrecedent);
-      const nbBlocs = Math.round(progression * 10);
-      const barre = '█'.repeat(nbBlocs) + '░'.repeat(10 - nbBlocs);
+      const progression     = (stats.subscribers - palierPrecedent) / (prochainPalier - palierPrecedent);
+      const nbBlocs         = Math.round(progression * 10);
+      const barre           = '█'.repeat(nbBlocs) + '░'.repeat(10 - nbBlocs);
 
       await interaction.editReply({
         embeds: [new EmbedBuilder()
@@ -655,9 +569,9 @@ client.on('interactionCreate', async interaction => {
           )
           .setThumbnail(stats.thumbnail)
           .addFields(
-            { name: '👥 Abonnés',  value: `**${stats.subscribers.toLocaleString('fr-FR')}**`, inline: true },
-            { name: '👁️ Vues',     value: `**${stats.views.toLocaleString('fr-FR')}**`,       inline: true },
-            { name: '🎬 Vidéos',   value: `**${stats.videos.toLocaleString('fr-FR')}**`,      inline: true },
+            { name: '👥 Abonnés', value: `**${stats.subscribers.toLocaleString('fr-FR')}**`, inline: true },
+            { name: '👁️ Vues',    value: `**${stats.views.toLocaleString('fr-FR')}**`,       inline: true },
+            { name: '🎬 Vidéos',  value: `**${stats.videos.toLocaleString('fr-FR')}**`,      inline: true },
           )
           .setFooter({ text: 'BastoYT • YouTube Stats' })
           .setTimestamp()],
